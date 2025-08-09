@@ -1,0 +1,30 @@
+[
+  {
+    "model": "plans.plan",
+    "pk": 1,
+    "fields": {
+      "name": "Free",
+      "description": "Basic free tier",
+      "price_cents": 0,
+      "interval": "monthly",
+      "max_users": 3,
+      "features": {"support": "community", "limits": {"max_users": 3}},
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "plans.plan",
+    "pk": 2,
+    "fields": {
+      "name": "Pro",
+      "description": "Professional tier",
+      "price_cents": 4900,
+      "interval": "monthly",
+      "max_users": 50,
+      "features": {"support": "email", "limits": {"max_users": 50}},
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]
