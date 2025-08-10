@@ -35,6 +35,7 @@ export default function NavBar() {
             {isAdmin && (
               <>
                 <Link to="/admin/plans">Admin: Plans</Link>
+                <Link to="/admin/subscriptions">Admin: Subscriptions</Link>
                 <Link to="/admin/tenants">Admin: Tenants</Link>
               </>
             )}

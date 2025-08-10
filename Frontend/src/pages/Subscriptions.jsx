@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { useToast } from '../components/ToastProvider'
+import formatError from '../utils/formatError'
 
 export default function Subscriptions() {
   const [items, setItems] = useState([])
   const [plans, setPlans] = useState([])
+  const toast = useToast()
 
   useEffect(() => {
-    // fetch subscriptions (tenant-scoped)
-    api.get('/subscriptions/').then(r => setItems(r.data))
-    // fetch plans to map id -> name
-    api.get('/plans/').then(r => setPlans(r.data))
+    const load = async () => {
+      try {
+        const [s, p] = await Promise.all([
+          api.get('/subscriptions/'),
+          api.get('/plans/'),
+        ])
+        setItems(s.data)
+        setPlans(p.data)
+      } catch (e) {
+        toast.error(formatError(e, 'Failed to load subscriptions'))
+      }
+    }
+    load()
   }, [])
 
   const planName = (planId) => plans.find(p => p.id === planId)?.name || planId
@@ -19,7 +31,7 @@ export default function Subscriptions() {
     if (!newPlanId) return
     setUpdating(subId)
     try {
-      await api.post(`/subscriptions/${subId}/change_plan/`, { plan: newPlanId })
+      await api.post(`/subscriptions/${subId}/change-plan/`, { plan: newPlanId })
       // reload subscriptions
       const [s, p] = await Promise.all([
         api.get('/subscriptions/'),
@@ -29,6 +41,7 @@ export default function Subscriptions() {
       setPlans(p.data)
     } catch (e) {
       console.error(e)
+      toast.error(formatError(e, 'Failed to change plan'))
     } finally {
       setUpdating(null)
     }

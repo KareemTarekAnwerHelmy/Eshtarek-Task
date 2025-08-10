@@ -1,24 +1,28 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
 import { useToast } from '../components/ToastProvider'
+import formatError from '../utils/formatError'
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState([])
   const [subs, setSubs] = useState([])
+  const [plans, setPlans] = useState([])
   const [selectedSub, setSelectedSub] = useState('')
   const toast = useToast()
 
   const load = async () => {
     try {
-      const [i, s] = await Promise.all([
+      const [i, s, p] = await Promise.all([
         api.get('/billing/'),
         api.get('/subscriptions/'),
+        api.get('/plans/'),
       ])
       setInvoices(i.data)
       setSubs(s.data)
+      setPlans(p.data)
       if (!selectedSub && s.data.length > 0) setSelectedSub(s.data[0].id)
     } catch (e) {
-      toast.error('Failed to load invoices')
+      toast.error(formatError(e, 'Failed to load invoices'))
     }
   }
   useEffect(() => { load() }, [])
@@ -29,7 +33,7 @@ export default function Invoices() {
       await api.post('/billing/', { subscription: selectedSub })
       toast.success('Invoice created')
       load()
-    } catch (e) { toast.error('Create failed') }
+    } catch (e) { toast.error(formatError(e, 'Create failed')) }
   }
 
   const payInvoice = async (id) => {
@@ -37,7 +41,7 @@ export default function Invoices() {
       await api.post(`/billing/${id}/pay/`)
       toast.success('Payment completed')
       load()
-    } catch(e) { toast.error('Payment failed') }
+    } catch(e) { toast.error(formatError(e, 'Payment failed')) }
   }
 
   return (
@@ -46,7 +50,11 @@ export default function Invoices() {
         <h1 className="page">Invoices</h1>
         <div className="row">
           <select value={selectedSub} onChange={e=>setSelectedSub(e.target.value)}>
-            {subs.map(s => <option key={s.id} value={s.id}>{s.id} - {s.plan} ({s.status})</option>)}
+            {subs.map(s => {
+              const plan = plans.find(p=>p.id===s.plan)
+              const label = plan ? `${s.id} · ${plan.name} · $${(plan.price_cents/100).toFixed(2)} (${s.status})` : `${s.id} · plan ${s.plan} (${s.status})`
+              return <option key={s.id} value={s.id}>{label}</option>
+            })}
           </select>
           <button onClick={createInvoice} disabled={!selectedSub}>Create Invoice</button>
         </div>

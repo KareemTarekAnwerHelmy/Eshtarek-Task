@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Subscription
+from .models import Subscription, SubscriptionStatus
 from tenants.models import Tenant
 from plans.models import Plan
 
@@ -19,11 +19,16 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
     tenant = serializers.PrimaryKeyRelatedField(queryset=Tenant.objects.all(), required=False)
     plan = serializers.PrimaryKeyRelatedField(queryset=Plan.objects.all())
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices, required=False)
 
     class Meta:
         model = Subscription
-        fields = ('tenant', 'plan')
+        fields = ('tenant', 'plan', 'status')
 
 
 class SubscriptionChangePlanSerializer(serializers.Serializer):
     plan = serializers.PrimaryKeyRelatedField(queryset=Plan.objects.all())
+
+
+class SubscriptionChangeStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices)

@@ -10,6 +10,7 @@ import { useAuth } from './context/AuthContext'
 import PlansAdmin from './pages/admin/PlansAdmin'
 import TenantsAdmin from './pages/admin/TenantsAdmin'
 import NavBar from './components/NavBar'
+import SubscriptionsAdmin from './pages/admin/SubscriptionsAdmin'
 
 const Private = ({ children }) => (isAuthed() ? children : <Navigate to="/login" replace />)
 
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/subscriptions" element={<Private><Subscriptions /></Private>} />
         <Route path="/invoices" element={<Private><Invoices /></Private>} />
         <Route path="/admin/plans" element={<Private><AdminRoute><PlansAdmin /></AdminRoute></Private>} />
+        <Route path="/admin/subscriptions" element={<Private><AdminRoute><SubscriptionsAdmin /></AdminRoute></Private>} />
         <Route path="/admin/tenants" element={<Private><AdminRoute><TenantsAdmin /></AdminRoute></Private>} />
       </Routes>
     </BrowserRouter>

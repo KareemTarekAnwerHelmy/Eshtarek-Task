@@ -63,16 +63,18 @@ npm run dev
 - Plans: CRUD `/api/plans/`
 - Tenants: CRUD `/api/tenants/`
 - Subscriptions: `/api/subscriptions/`
-  - POST `/api/subscriptions/{id}/change_plan/` (admin/tenant admin)
+  - POST `/api/subscriptions/{id}/change-plan/` (admin/tenant admin)
+  - POST `/api/subscriptions/{id}/change-status/` (admin/tenant admin)
 - Billing:
   - GET/POST `/api/billing/` (create invoice)
   - POST `/api/billing/{invoice_id}/pay/`
 
 ## Frontend Routes
+- `/` Home (public view + richer authenticated overview)
 - `/login`, `/register`
 - `/plans` (public list)
 - `/dashboard`, `/subscriptions`, `/invoices` (auth)
-- `/admin/plans`, `/admin/tenants` (platform admin only)
+- `/admin/plans`, `/admin/tenants`, `/admin/subscriptions` (platform admin only)
 
 ## Test Flow
 1) Login as platform admin → see Admin links in nav.
@@ -92,6 +94,14 @@ npm run dev
   - Serve the frontend with nginx (static) instead of vite preview
   - Run containers as non-root
   - Pin/upgrade base images
+
+### Database Isolation: Postgres vs MySQL
+- Row-Level Security (RLS) is enforced in Postgres via per-table policies and request-scoped tenant context middleware.
+- MySQL does not support native RLS; if you switch to MySQL, isolation will rely on application-layer filtering. Document and test carefully.
+
+### Billing Logic
+- Invoice amounts are sourced from the subscription's plan `price_cents` at time of creation.
+- No proration or annual/monthly toggles are applied by default. Extend the logic if needed (e.g., period handling, proration on plan change).
 
 ## License
 For evaluation and demo purposes.
