@@ -40,10 +40,12 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://localhost:8000/api
     container_name: eshtarek-frontend
     environment:
       # Point axios to backend inside compose network
-      VITE_API_BASE: http://backend:8000/api
+      VITE_API_BASE: http://localhost:8000/api
     depends_on:
       - backend
     ports:
