@@ -40,3 +40,13 @@ class InvoiceCreateSerializer(serializers.Serializer):
 
 class PayInvoiceSerializer(serializers.Serializer):
     amount_cents = serializers.IntegerField(min_value=1, required=False)
+    simulate = serializers.ChoiceField(choices=["fail", "succeed"], required=False)
+
+
+class WebhookSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=[
+        "payment_intent.succeeded",
+        "payment_intent.failed",
+    ])
+    invoice = serializers.PrimaryKeyRelatedField(queryset=Invoice.objects.all())
+    amount_cents = serializers.IntegerField(min_value=1, required=False)

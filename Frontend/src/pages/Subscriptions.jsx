@@ -27,6 +27,28 @@ export default function Subscriptions() {
   const planName = (planId) => plans.find(p => p.id === planId)?.name || planId
 
   const [updating, setUpdating] = useState(null) // subscription id being updated
+  const [createPlanId, setCreatePlanId] = useState('')
+
+  const createSubscription = async (e) => {
+    e?.preventDefault?.()
+    if (!createPlanId) {
+      toast.error('Please select a plan')
+      return
+    }
+    try {
+      await api.post('/subscriptions/', { plan: createPlanId })
+      toast.success('Subscription created')
+      // reload list after creation
+      const [s, p] = await Promise.all([
+        api.get('/subscriptions/'),
+        api.get('/plans/'),
+      ])
+      setItems(s.data)
+      setPlans(p.data)
+    } catch (e) {
+      toast.error(formatError(e, 'Failed to create subscription'))
+    }
+  }
   const changePlan = async (subId, newPlanId) => {
     if (!newPlanId) return
     setUpdating(subId)
@@ -51,6 +73,20 @@ export default function Subscriptions() {
     <div className="container">
       <div className="card">
         <h1 className="page">Subscriptions</h1>
+        <form className="form" onSubmit={createSubscription} style={{marginBottom:12}}>
+          <div className="row">
+            <select
+              value={createPlanId}
+              onChange={(e)=>setCreatePlanId(e.target.value)}
+            >
+              <option value="">Select plan…</option>
+              {plans.map(p => (
+                <option key={p.id} value={p.id}>{p.name} · ${ (p.price_cents/100).toFixed(2) }</option>
+              ))}
+            </select>
+            <button type="submit">Create Subscription</button>
+          </div>
+        </form>
         <ul className="list">
           {items.map(s => (
             <li key={s.id}>

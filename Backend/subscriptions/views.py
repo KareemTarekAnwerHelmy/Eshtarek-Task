@@ -30,6 +30,12 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return qs.filter(tenant_id=profile.tenant_id)
         return qs.none()
 
+    def get_permissions(self):
+        # Allow any authenticated tenant member to create a subscription or change plan
+        if self.action in ['create', 'change_plan']:
+            return [permissions.IsAuthenticated()]
+        return [perm() for perm in self.permission_classes]
+
     def get_serializer_class(self):
         if self.action in ['create']:
             return SubscriptionCreateSerializer
@@ -42,7 +48,16 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         profile = getattr(user, 'profile', None)
-        tenant = serializer.validated_data['tenant'] if 'tenant' in serializer.validated_data else getattr(profile, 'tenant', None)
+        # Determine tenant: non-admin users can only create for their own tenant
+        is_platform_admin = getattr(user, 'is_superuser', False)
+        role = getattr(getattr(profile, 'role', None), 'value', None) or getattr(profile, 'role', None)
+        is_tenant_admin = role in ('ADMIN', 'TENANT_ADMIN')
+        if is_platform_admin or is_tenant_admin:
+            tenant = serializer.validated_data.get('tenant') or getattr(profile, 'tenant', None)
+        else:
+            tenant = getattr(profile, 'tenant', None)
+        if tenant is None:
+            raise serializers.ValidationError({'tenant': ['Tenant is required']})
         # enforce one active subscription per tenant
         if Subscription.objects.filter(tenant=tenant, status=SubscriptionStatus.ACTIVE).exists():
             raise serializers.ValidationError({
@@ -58,9 +73,17 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 'non_field_errors': ['A subscription with this tenant and status already exists.']
             })
 
-    @action(detail=True, methods=['post'], url_path='change-plan', permission_classes=[IsTenantAdminOrReadOnly])
+    @action(detail=True, methods=['post'], url_path='change-plan', permission_classes=[permissions.IsAuthenticated])
     def change_plan(self, request, pk=None):
         sub = self.get_object()
+        # Ownership check: non-admin users can only change plan for their own tenant's subscription
+        user = request.user
+        if not getattr(user, 'is_superuser', False):
+            profile = getattr(user, 'profile', None)
+            role = getattr(getattr(profile, 'role', None), 'value', None) or getattr(profile, 'role', None)
+            is_tenant_admin = role in ('ADMIN', 'TENANT_ADMIN')
+            if not is_tenant_admin and (not profile or getattr(profile, 'tenant_id', None) != sub.tenant_id):
+                return Response({'detail': 'Not allowed for this tenant'}, status=status.HTTP_403_FORBIDDEN)
         serializer = SubscriptionChangePlanSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         sub.plan = serializer.validated_data['plan']

@@ -41,7 +41,13 @@ class Payment(models.Model):
     amount_cents = models.PositiveIntegerField()
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.SUCCEEDED)
     provider_ref = models.CharField(max_length=100, blank=True, default="mock_txn")
+    idempotency_key = models.CharField(max_length=100, null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return f"Payment {self.id} -> Invoice {self.invoice_id} [{self.status}]"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["invoice", "idempotency_key"], name="uniq_invoice_idem_key", condition=models.Q(idempotency_key__isnull=False)),
+        ]
